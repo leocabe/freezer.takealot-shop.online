@@ -58,6 +58,38 @@
       color: var(--text);
     }
 
+    /* ===== PROMO BAR (stock clearance countdown) ===== */
+    .promo-bar{
+      height: var(--promobar-height, 32px);
+      background: #c81e1e;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 0 10px;
+      position: sticky;
+      top: 0;
+      z-index: 1000;
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: .2px;
+      text-align: center;
+    }
+
+    .promo-bar__label{
+      white-space: nowrap;
+    }
+
+    .promo-bar__timer{
+      font-variant-numeric: tabular-nums;
+      font-weight: 800;
+      background: rgba(255,255,255,.15);
+      border-radius: 4px;
+      padding: 2px 6px;
+      letter-spacing: .5px;
+    }
+
     /* ===== TOP BAR (ETAPA 1) ===== */
     .topbar{
       height: var(--topbar-height);
@@ -68,7 +100,7 @@
       justify-content: space-between;
       padding: 0 12px;
       position: sticky;
-      top: 0;
+      top: var(--promobar-height, 32px);
       z-index: 999;
     }
 
@@ -1401,6 +1433,28 @@
   font-weight: 600;
 }
 
+.stock-left{
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 8px;
+  font-size: 13px;
+  color: #c81e1e;
+  font-weight: 700;
+}
+
+.stock-left__dot{
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background: #c81e1e;
+  flex: 0 0 auto;
+}
+
+.stock-left__text strong{
+  font-weight: 800;
+}
+
 .est-delivery{
   display:flex;
   align-items:center;
@@ -1612,6 +1666,12 @@
 </head>
 
 <body>
+  <!-- PROMO BAR: stock clearance countdown -->
+  <div class="promo-bar" role="timer" aria-label="Stock clearance countdown">
+    <span class="promo-bar__label">STOCK CLEARANCE ENDS IN</span>
+    <span class="promo-bar__timer" id="promoTimer">08:00:00</span>
+  </div>
+
   <!-- ETAPA 1: TOP BAR -->
   <header class="topbar" aria-label="Top Bar">
     <div class="topbar__left">
@@ -1709,7 +1769,12 @@
     <div class="price-left">
       <div class="main-price">
         <span class="currency">R</span>
-        <span class="price">899.00</span>
+        <span class="price">666.00</span>
+      </div>
+
+      <div class="stock-left" id="stockLeft">
+        <span class="stock-left__dot"></span>
+        <span class="stock-left__text">Only <strong id="stockLeftCount">12</strong> units left in stock</span>
       </div>
 
       <div class="was-price">
@@ -2305,6 +2370,54 @@
 
   <script>
 
+    // ===== Promo bar countdown (8h) + units left =====
+    (function promoCountdown(){
+      const timerEl = document.getElementById("promoTimer");
+      const stockEl = document.getElementById("stockLeftCount");
+      if(!timerEl) return;
+
+      const DURATION_MS = 8 * 60 * 60 * 1000;
+      const STORAGE_KEY = "promoClearanceEndsAt";
+      const START_UNITS = 12;
+      const MIN_UNITS = 1;
+
+      let endsAt = Number(localStorage.getItem(STORAGE_KEY));
+      if(!endsAt || endsAt <= Date.now()){
+        endsAt = Date.now() + DURATION_MS;
+        localStorage.setItem(STORAGE_KEY, String(endsAt));
+      }
+
+      function pad(n){ return String(n).padStart(2, "0"); }
+
+      function tick(){
+        let remaining = endsAt - Date.now();
+
+        if(remaining <= 0){
+          endsAt = Date.now() + DURATION_MS;
+          localStorage.setItem(STORAGE_KEY, String(endsAt));
+          remaining = DURATION_MS;
+        }
+
+        const hours = Math.floor(remaining / 3600000);
+        const minutes = Math.floor((remaining % 3600000) / 60000);
+        const seconds = Math.floor((remaining % 60000) / 1000);
+
+        timerEl.textContent = `${pad(hours)}:${pad(minutes)}:${pad(seconds)}`;
+
+        if(stockEl){
+          const elapsed = DURATION_MS - remaining;
+          const progress = elapsed / DURATION_MS;
+          const unitsLeft = Math.max(
+            MIN_UNITS,
+            Math.round(START_UNITS - progress * (START_UNITS - MIN_UNITS))
+          );
+          stockEl.textContent = unitsLeft;
+        }
+      }
+
+      tick();
+      setInterval(tick, 1000);
+    })();
 
     // ===== Carousel (dots + swipe) =====
 const images = ["1.png","2.png","3.png","4.png","5.png","6.png"];
